@@ -1,8 +1,11 @@
+<div align="center">
+
 # <img src="https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Convenience store/3D/convenience_store_3d.png" alt="Alien" width="25" height="25" /> Fluent Emoji Mart
 Designed for Markdown editing. see <a href="https://fluent-emoji-mart.zqskate.com/">live demo</a>
 
-
 <a href="https://fluent-emoji-mart.zqskate.com/"><img width="639" alt="FluentEmojiMart" src="https://github.com/user-attachments/assets/bb0ac692-22ae-42c0-9f53-9dad1ae23ea5"></a>
+
+</div>
 
 # <img src="https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Fire/3D/fire_3d.png" alt="Alien" width="25" height="25" /> Features
 [Emoji Mart](https://github.com/missive/emoji-mart) + [Fluent Emoji](https://github.com/xsalazar/fluent-emoji) = Fluent Emoji Mart  
