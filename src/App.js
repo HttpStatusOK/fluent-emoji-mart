@@ -1,8 +1,10 @@
 import './App.css';
 import data from '@emoji-mart/data'
 import Picker from '@emoji-mart/react'
+import GitHubIcon from '@mui/icons-material/GitHub';
 import React, {useEffect, useState} from "react";
 import {
+  Button,
   createTheme,
   CssBaseline,
   FormControlLabel,
@@ -14,7 +16,7 @@ import {
 import ClipboardJS from "clipboard";
 import {SnackbarProvider, useSnackbar} from "notistack";
 
-const  getRandomBackgroundColor = () => {
+const getRandomBackgroundColor = () => {
   const partyColors = [
     "#FF6B6B",
     "#FF6BB5",
@@ -144,7 +146,17 @@ const FluentEmojiPicker = () => {
               <FormControlLabel value="Raw" control={<Radio/>} label="Raw"/>
             </RadioGroup>
           </h1>
-          <div className="container" style={{display: "grid", placeItems: "center", gridAutoFlow: "column"}}>
+          <div
+            className="container"
+            style={{
+              display: "grid",
+              placeItems: "center",
+              gridAutoFlow: "column",
+              backgroundColor: "#151618",
+              padding: 10,
+              borderRadius: 10,
+              minHeight: 100,
+          }}>
             {emojiURLs.map((url) => (
               <ImageListItem
                 className={"emoji-item"}
@@ -167,6 +179,19 @@ const FluentEmojiPicker = () => {
                 />
               </ImageListItem>
             ))}
+          </div>
+          <div style={{ textAlign: "center", margin: 20 }}>
+            <Button
+              href="https://github.com/HttpStatusOK/fluent-emoji-mart"
+              startIcon={<GitHubIcon />}
+              style={{
+                textTransform: "none",
+                fontSize: 16,
+                color: "white"
+              }}
+            >
+              Github
+            </Button>
           </div>
         </footer>
       </div>
