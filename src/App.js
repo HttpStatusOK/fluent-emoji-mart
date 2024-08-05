@@ -1,20 +1,28 @@
 import './App.css';
 import data from '@emoji-mart/data'
 import Picker from '@emoji-mart/react'
-import GitHubIcon from '@mui/icons-material/GitHub';
-import React, {useEffect, useState} from "react";
 import {
-  Button,
+  FileCodeIcon,
+  MarkGithubIcon,
+  HomeIcon
+} from "@primer/octicons-react";
+import React, {useEffect, useRef, useState} from "react";
+import {
+  Box,
   createTheme,
   CssBaseline,
   FormControlLabel,
   ImageListItem,
+  Link,
   Radio,
   RadioGroup,
-  ThemeProvider
+  Stack,
+  ThemeProvider, Tooltip
 } from "@mui/material";
 import ClipboardJS from "clipboard";
 import {SnackbarProvider, useSnackbar} from "notistack";
+
+const METADATA = "https://raw.githubusercontent.com/xsalazar/fluent-emoji/main/src/Components/metadata.json";
 
 const getRandomBackgroundColor = () => {
   const partyColors = [
@@ -37,23 +45,28 @@ const Header = () => {
       <img
         style={{marginTop: 20}}
         src="https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Convenience store/3D/convenience_store_3d.png"
-        alt="Alien" width="50" height="50"/>
-      <h1 style={{marginTop: 0}}>
+        alt="Alien" width="30" height="30"/>
+      <h2 style={{marginTop: 0}}>
         Fluent Emoji Mart
-      </h1>
+      </h2>
     </header>
   )
 }
 
 const FluentEmojiPicker = () => {
+  const {enqueueSnackbar} = useSnackbar();
+
   const [metaData, setMetaData] = useState([]);
   const [emojiURLs, setEmojiURLs] = useState([]);
 
   const [copyMode, setCopyMode] = useState("Markdown");
-  const {enqueueSnackbar} = useSnackbar();
+
+  const nativeCopyRef = useRef();
+  const [nativeEmoji, setNativeEmoji] = useState(null);
 
   useEffect(() => {
-    fetch("https://raw.githubusercontent.com/xsalazar/fluent-emoji/main/src/Components/metadata.json")
+    console.log(METADATA);
+    fetch(METADATA)
       .then(res => res.json())
       .then(data => setMetaData(data));
   }, []);
@@ -61,7 +74,9 @@ const FluentEmojiPicker = () => {
   useEffect(() => {
     const clipboard = new ClipboardJS(".emoji-item");
     clipboard.on('success', (e) => {
-      enqueueSnackbar('Copied', { variant: "success", autoHideDuration: 1000 ,anchorOrigin: { vertical : "top", horizontal: "center" } });
+      if (e.text.length > 2) {
+        enqueueSnackbar('Copied', { variant: "success", autoHideDuration: 1000 ,anchorOrigin: { vertical : "top", horizontal: "center" } });
+      }
       e.clearSelection();
     });
 
@@ -76,7 +91,13 @@ const FluentEmojiPicker = () => {
     };
   }, [enqueueSnackbar]);
 
+  useEffect(() => {
+    nativeCopyRef.current?.click();
+  }, [nativeEmoji]);
+
   const findEmoji = (pickerSelected) => {
+    setNativeEmoji(() => pickerSelected.native)
+    console.log("Selected: ", pickerSelected)
     /**
      * 1 Default
      * 2 Light
@@ -101,16 +122,28 @@ const FluentEmojiPicker = () => {
     }
 
     const URLs = [];
-    for (const key in metaData) {
-      if (metaData[key].cldr === pickerSelected.name.toLowerCase()) {
-        let imagesObj = hasSkin && metaData[key]["skintones"] ? metaData[key]["skintones"][mode] : metaData[key]["styles"];
-        for (let k in imagesObj) {
-          URLs.push(
-            imagesObj[k]
-          );
+
+    let fluentEmoji = metaData[pickerSelected.name];
+    if (!fluentEmoji) {
+      for (const key in metaData) {
+        if (metaData[key].cldr === pickerSelected.name.toLowerCase() || metaData[key].glyph === pickerSelected.native) {
+          fluentEmoji = metaData[key];
+          break;
         }
       }
     }
+
+    if (fluentEmoji) {
+      let imagesObj = hasSkin && fluentEmoji["skintones"] ? fluentEmoji["skintones"][mode] : fluentEmoji["styles"];
+      for (let k in imagesObj) {
+        URLs.push(
+          imagesObj[k]
+        );
+      }
+    }
+
+    console.log("Fluent: ", fluentEmoji);
+    console.log("\n");
     setEmojiURLs(URLs)
   }
 
@@ -146,53 +179,82 @@ const FluentEmojiPicker = () => {
               <FormControlLabel value="Raw" control={<Radio/>} label="Raw"/>
             </RadioGroup>
           </h1>
-          <div
-            className="container"
-            style={{
-              display: "grid",
-              placeItems: "center",
-              gridAutoFlow: "column",
-              backgroundColor: "#151618",
-              padding: 10,
-              borderRadius: 10,
-              minHeight: 100,
-          }}>
-            {emojiURLs.map((url) => (
-              <ImageListItem
-                className={"emoji-item"}
-                data-clipboard-text={handleCopyURL(url)}
-                sx={{
-                  width: 80,
-                  borderRadius: 2,
-                  padding: 0.25,
-                  "&:hover": {
-                    backgroundColor: () => getRandomBackgroundColor(),
-                  },
-                }}
-              >
-                <img
-                  loading="lazy"
-                  width="32px"
-                  height="32px"
-                  src={url}
-                  alt={url}
-                />
-              </ImageListItem>
-            ))}
-          </div>
-          <div style={{ textAlign: "center", margin: 20 }}>
-            <Button
-              href="https://github.com/HttpStatusOK/fluent-emoji-mart"
-              startIcon={<GitHubIcon />}
+          <button className={"emoji-item"} ref={nativeCopyRef} data-clipboard-text={nativeEmoji} style={{ display: "none" }}></button>
+          {emojiURLs &&
+            <div
+              className="container"
               style={{
-                textTransform: "none",
-                fontSize: 16,
-                color: "white"
-              }}
-            >
-              Github
-            </Button>
-          </div>
+                display: "grid",
+                placeItems: "center",
+                gridAutoFlow: "column",
+                backgroundColor: "#151618",
+                padding: 10,
+                borderRadius: 10,
+                minHeight: 100,
+              }}>
+              {emojiURLs.length === 0 && <p style={{ color: "#9f9f9f" }}>Not found</p>}
+              {emojiURLs.map((url) => (
+                <ImageListItem
+                  key={url}
+                  className={"emoji-item"}
+                  data-clipboard-text={handleCopyURL(url)}
+                  sx={{
+                    width: 80,
+                    borderRadius: 2,
+                    padding: 0.25,
+                    "&:hover": {
+                      backgroundColor: () => getRandomBackgroundColor(),
+                    },
+                  }}
+                >
+                  <img
+                    loading="lazy"
+                    width="32px"
+                    height="32px"
+                    src={url}
+                    alt={url}
+                  />
+                </ImageListItem>
+              ))}
+            </div>
+          }
+          <Box component="footer" sx={{ py: 4 }}>
+            <Stack spacing={4} direction="row" justifyContent="center">
+              <Tooltip title="Home Pages">
+                <Link
+                  href="https://zqskate.com"
+                  color="textPrimary"
+                  aria-label="Home Pages"
+                  target="_blank"
+                  rel="noopener"
+                >
+                  <HomeIcon size="small" verticalAlign="middle" />
+                </Link>
+              </Tooltip>
+              <Tooltip title="GitHub">
+                <Link
+                  href="https://github.com/HttpStatusOK"
+                  color="textPrimary"
+                  aria-label="GitHub"
+                  target="_blank"
+                  rel="noopener"
+                >
+                  <MarkGithubIcon size="small" verticalAlign="middle" />
+                </Link>
+              </Tooltip>
+              <Tooltip title="Source Code">
+                <Link
+                  href="https://github.com/HttpStatusOK/fluent-emoji-mart"
+                  color="textPrimary"
+                  aria-label="Source Code"
+                  target="_blank"
+                  rel="noopener"
+                >
+                  <FileCodeIcon size="small" verticalAlign="middle" />
+                </Link>
+              </Tooltip>
+            </Stack>
+          </Box>
         </footer>
       </div>
     </div>
@@ -210,9 +272,9 @@ const App = () => {
   return (
     <div className="App">
       <ThemeProvider theme={darkTheme}>
-        <CssBaseline />
+        <CssBaseline/>
         <SnackbarProvider maxSnack={1}>
-          <FluentEmojiPicker />
+          <FluentEmojiPicker/>
         </SnackbarProvider>
       </ThemeProvider>
     </div>
