@@ -17,6 +17,7 @@ import {
   Radio,
   RadioGroup,
   Stack,
+  TextField,
   ThemeProvider, Tooltip
 } from "@mui/material";
 import ClipboardJS from "clipboard";
@@ -59,7 +60,8 @@ const FluentEmojiPicker = () => {
   const [metaData, setMetaData] = useState([]);
   const [emojiURLs, setEmojiURLs] = useState([]);
 
-  const [copyMode, setCopyMode] = useState("Markdown");
+  const [copyMode, setCopyMode] = useState(localStorage.getItem("copyMode") || "Markdown");
+  const [copyWidth, setCopyWidth] = useState(localStorage.getItem("copyWidth") ? Number(localStorage.getItem("copyWidth")) : 25);
 
   const nativeCopyRef = useRef();
   const [nativeEmoji, setNativeEmoji] = useState(null);
@@ -74,7 +76,7 @@ const FluentEmojiPicker = () => {
   useEffect(() => {
     const clipboard = new ClipboardJS(".emoji-item");
     clipboard.on('success', (e) => {
-      if (e.text.length > 2) {
+      if (e.text.length > 50) {
         enqueueSnackbar('Copied', { variant: "success", autoHideDuration: 1000 ,anchorOrigin: { vertical : "top", horizontal: "center" } });
       }
       e.clearSelection();
@@ -111,14 +113,15 @@ const FluentEmojiPicker = () => {
     let hasSkin = pickerSelected.skin;
 
     let mode;
+    let suffix = "";
     if (hasSkin) {
       switch (pickerSelected.skin) {
-        case 1: mode = "Default"; break;
-        case 2: mode = "Light"; break;
-        case 3: mode = "MediumLight"; break;
-        case 4: mode = "Medium"; break;
-        case 5: mode = "MediumDark"; break;
-        case 6: mode = "Dark"; break;
+        case 1: mode = "Default"; suffix = ""; break;
+        case 2: mode = "Light"; suffix = " Light Skin Tone"; break;
+        case 3: mode = "MediumLight"; suffix = " Medium-Light Skin Tone"; break;
+        case 4: mode = "Medium"; suffix = " Medium Skin Tone"; break;
+        case 5: mode = "MediumDark"; suffix = " Medium-Dark Skin Tone"; break;
+        case 6: mode = "Dark"; suffix = " Dark Skin Tone"; break;
         default: {}
       }
     }
@@ -136,6 +139,7 @@ const FluentEmojiPicker = () => {
     }
 
     if (fluentEmoji) {
+      handleAnimatedEmoji(pickerSelected, fluentEmoji, suffix);
       let imagesObj = hasSkin && fluentEmoji["skintones"] ? fluentEmoji["skintones"][mode] : fluentEmoji["styles"];
       for (let k in imagesObj) {
         URLs.push(
@@ -149,9 +153,52 @@ const FluentEmojiPicker = () => {
     setEmojiURLs(URLs)
   }
 
+  const handleAnimatedEmoji = (pickerSelected, fluentEmoji, suffix) => {
+    let animatedGroup;
+    switch (fluentEmoji.group) {
+      case "Smileys & Emotion": animatedGroup = "Smilies"; break;
+      case "People & Body": animatedGroup = "Hand gestures"; break;
+      case "Animals & Nature": animatedGroup = "Animals"; break;
+      case "Food & Drink": animatedGroup = "Food"; break;
+      case "Travel & Places": animatedGroup = "Travel and places"; break;
+      default: animatedGroup = fluentEmoji.group;
+    }
+    let fileName = (pickerSelected.name + suffix).replaceAll(" ", "%20");
+    animatedGroup = animatedGroup?.replaceAll(" ", "%20")
+    let url = `https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/${animatedGroup}/${fileName}.png`;
+    fetch(url)
+      .then(res => {
+        if (res.ok) {
+          addAnimatedURL(url);
+        } else if (fluentEmoji.group === "People & Body") {
+          animatedGroup = "People%20with%20professions";
+          url = `https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/${animatedGroup}/${fileName}.png`
+          fetch(url)
+            .then(res => {
+              if (res.ok) {
+                addAnimatedURL(url);
+              }
+            })
+        }
+      })
+      .catch(err => {});
+  }
+
+  const addAnimatedURL = (successURL) => {
+    setEmojiURLs(pre => {
+      let temp = [...pre];
+      if (temp.length < 3) {
+        temp.push(successURL);
+      } else {
+        temp[3] = successURL;
+      }
+      return temp;
+    });
+  }
+
   const handleCopyURL = (url) => {
     if (copyMode === "Markdown") {
-      return `<img src="${url}" alt="Alien" width="25" height="25" />`
+      return `<img src="${url}" alt="Alien" width="${copyWidth}" height="${copyWidth}" />`
     }
     return url;
   }
@@ -164,6 +211,7 @@ const FluentEmojiPicker = () => {
       <div>
         <Header/>
         <Picker
+          theme="dark"
           data={data}
           onEmojiSelect={i => {
             setEmojiURLs(pre => []);
@@ -171,15 +219,34 @@ const FluentEmojiPicker = () => {
           }}/>
         <footer>
           <h1>
-            <RadioGroup
-              row
-              value={copyMode}
-              onChange={event => setCopyMode(event.target.value)}
-              style={{padding: "0 12px"}}
-            >
-              <FormControlLabel value="Markdown" control={<Radio/>} label="Markdown"/>
-              <FormControlLabel value="Raw" control={<Radio/>} label="Raw"/>
-            </RadioGroup>
+            <Box component="footer" >
+              <Stack spacing={4} direction="row" justifyContent="center">
+                <RadioGroup
+                  row
+                  value={copyMode}
+                  onChange={event => {
+                    setCopyMode(event.target.value);
+                    localStorage.setItem("copyMode", event.target.value);
+                  }}
+                  // style={{ padding: "0 12px", textAlign: "right" }}
+                >
+                  <FormControlLabel value="Markdown" control={<Radio size="small"/>} label="Markdown"/>
+                  <FormControlLabel value="Raw" control={<Radio size="small"/>} label="Raw"/>
+                </RadioGroup>
+                <TextField
+                  size="small"
+                  id="outlined-basic"
+                  label="Width"
+                  variant="outlined"
+                  type="number"
+                  style={{ width: 100 }}
+                  value={copyWidth}
+                  onChange={e => {
+                    setCopyWidth(Number(e.target.value));
+                    localStorage.setItem("copyWidth", e.target.value);
+                  }}/>
+              </Stack>
+            </Box>
           </h1>
           <button className={"emoji-item"} ref={nativeCopyRef} data-clipboard-text={nativeEmoji} style={{ display: "none" }}></button>
           {emojiURLs &&
@@ -192,7 +259,7 @@ const FluentEmojiPicker = () => {
                 backgroundColor: "#151618",
                 padding: 10,
                 borderRadius: 10,
-                minHeight: 100,
+                minHeight: 100
               }}>
               {emojiURLs.length === 0 && <p style={{ color: "#9f9f9f" }}>Not found</p>}
               {emojiURLs.map((url) => (
