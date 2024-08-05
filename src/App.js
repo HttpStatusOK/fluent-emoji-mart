@@ -92,7 +92,9 @@ const FluentEmojiPicker = () => {
   }, [enqueueSnackbar]);
 
   useEffect(() => {
-    nativeCopyRef.current?.click();
+    if (nativeEmoji) {
+      nativeCopyRef.current?.click();
+    }
   }, [nativeEmoji]);
 
   const findEmoji = (pickerSelected) => {
