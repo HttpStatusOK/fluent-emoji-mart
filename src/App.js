@@ -153,7 +153,7 @@ const FluentEmojiPicker = () => {
     setEmojiURLs(URLs)
   }
 
-  const handleAnimatedEmoji = (pickerSelected, fluentEmoji, suffix) => {
+  const handleAnimatedEmoji = async (pickerSelected, fluentEmoji, suffix) => {
     let animatedGroup;
     switch (fluentEmoji.group) {
       case "Smileys & Emotion": animatedGroup = "Smilies"; break;
@@ -165,23 +165,38 @@ const FluentEmojiPicker = () => {
     }
     let fileName = (pickerSelected.name + suffix).replaceAll(" ", "%20");
     animatedGroup = animatedGroup?.replaceAll(" ", "%20")
-    let url = `https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/${animatedGroup}/${fileName}.png`;
-    fetch(url)
-      .then(res => {
-        if (res.ok) {
-          addAnimatedURL(url);
-        } else if (fluentEmoji.group === "People & Body") {
-          animatedGroup = "People%20with%20professions";
-          url = `https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/${animatedGroup}/${fileName}.png`
-          fetch(url)
-            .then(res => {
-              if (res.ok) {
-                addAnimatedURL(url);
-              }
-            })
-        }
-      })
-      .catch(err => {});
+
+    let ok = await fetchAnimatedEmoji(animatedGroup, fileName);
+    if (ok) {
+      addAnimatedURL(buildAnimatedURL(animatedGroup, fileName));
+      return;
+    }
+
+    if (fluentEmoji.group !== "People & Body") {
+      return;
+    }
+
+    animatedGroup = "People%20with%20activities";
+    const try1 = await fetchAnimatedEmoji(animatedGroup, fileName);
+    if (try1) {
+      addAnimatedURL(buildAnimatedURL(animatedGroup, fileName));
+      return;
+    }
+
+    animatedGroup = "People%20with%20professions";
+    const try2 = await fetchAnimatedEmoji(animatedGroup, fileName);
+    if (try2) {
+      addAnimatedURL(buildAnimatedURL(animatedGroup, fileName));
+    }
+  }
+
+  const buildAnimatedURL = (group, name) => {
+    return `https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/${group}/${name}.png`;
+  }
+
+  const fetchAnimatedEmoji = async (group, name) => {
+    const res = await fetch(buildAnimatedURL(group, name));
+    return res.ok;
   }
 
   const addAnimatedURL = (successURL) => {
