@@ -218,6 +218,26 @@ const FluentEmojiPicker = () => {
     return url;
   }
 
+  const handleDownload = async (rawURL) => {
+    try {
+      const response = await fetch(rawURL);
+      if (!response.ok) {
+        throw new Error();
+      }
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = new URL(rawURL).pathname.split('/').pop().replaceAll("%20", "_");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Download error:', error);
+    }
+  };
+
   return (
     <div className="flex flex-center" style={{
       justifyContent: "center",
@@ -235,6 +255,18 @@ const FluentEmojiPicker = () => {
         <footer>
           <h1>
             <Box component="footer" >
+              <TextField
+                size="small"
+                id="outlined-basic"
+                label="Width"
+                variant="outlined"
+                type="number"
+                style={{ width: "100%", marginBottom: 10 }}
+                value={copyWidth}
+                onChange={e => {
+                  setCopyWidth(Number(e.target.value));
+                  localStorage.setItem("copyWidth", e.target.value);
+                }}/>
               <Stack spacing={4} direction="row" justifyContent="center">
                 <RadioGroup
                   row
@@ -246,20 +278,10 @@ const FluentEmojiPicker = () => {
                   // style={{ padding: "0 12px", textAlign: "right" }}
                 >
                   <FormControlLabel value="Markdown" control={<Radio size="small"/>} label="Markdown"/>
-                  <FormControlLabel value="Raw" control={<Radio size="small"/>} label="Raw"/>
+                  <FormControlLabel value="Raw" control={<Radio size="small"/>} label="Raw URL"/>
+                  <FormControlLabel value="Download" control={<Radio size="small"/>} label="Download"/>
                 </RadioGroup>
-                <TextField
-                  size="small"
-                  id="outlined-basic"
-                  label="Width"
-                  variant="outlined"
-                  type="number"
-                  style={{ width: 100 }}
-                  value={copyWidth}
-                  onChange={e => {
-                    setCopyWidth(Number(e.target.value));
-                    localStorage.setItem("copyWidth", e.target.value);
-                  }}/>
+
               </Stack>
             </Box>
           </h1>
@@ -282,6 +304,11 @@ const FluentEmojiPicker = () => {
                   key={url}
                   className={"emoji-item"}
                   data-clipboard-text={handleCopyURL(url)}
+                  onClick={() => {
+                    if (copyMode === "Download") {
+                      handleDownload(url);
+                    }
+                  }}
                   sx={{
                     width: 80,
                     borderRadius: 2,
